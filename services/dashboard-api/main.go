@@ -86,10 +86,14 @@ func handleSummary(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Revenue
-	var totalRevenue, revenueToday float64
-	db.QueryRow("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'completed'").Scan(&totalRevenue)
-	db.QueryRow("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'completed' AND created_at >= $1", today).Scan(&revenueToday)
+	// Revenue (charges minus refunds)
+	var totalCharges, totalRefunds, todayCharges, todayRefunds float64
+	db.QueryRow("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status IN ('completed','partially_refunded','refunded') AND (method IS NULL OR method != 'refund')").Scan(&totalCharges)
+	db.QueryRow("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'completed' AND method = 'refund'").Scan(&totalRefunds)
+	db.QueryRow("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status IN ('completed','partially_refunded','refunded') AND (method IS NULL OR method != 'refund') AND created_at >= $1", today).Scan(&todayCharges)
+	db.QueryRow("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'completed' AND method = 'refund' AND created_at >= $1", today).Scan(&todayRefunds)
+	totalRevenue := totalCharges - totalRefunds
+	revenueToday := todayCharges - todayRefunds
 
 	// Product count
 	var totalProducts int

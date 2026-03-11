@@ -225,6 +225,10 @@ func isPublicPath(path string) bool {
 			return true
 		}
 	}
+	// Allow health checks through to downstream services
+	if strings.HasSuffix(path, "/healthz") {
+		return true
+	}
 	return false
 }
 
