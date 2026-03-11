@@ -10,17 +10,17 @@ A multi-service order platform on AWS. Nine services, one cluster. The applicati
 
 ## Services
 
-| Service | Port | Description |
-|---------|------|-------------|
-| **api-gateway** | 8080 | Auth, rate limiting, routes requests to internal services |
-| **order-service** | 8081 | Order lifecycle and state machine |
-| **inventory-service** | 8082 | Stock management and reservations |
-| **payment-service** | 8083 | Payment processing, refunds, ledger |
-| **notification-service** | 8084 | Email and SMS dispatch |
-| **shipping-service** | 8085 | Shipments, tracking, carrier webhooks |
-| **worker** | - | SQS consumer, orchestrates cross-service events |
-| **scheduler** | - | Cron jobs (expired reservations, abandoned orders, retries) |
-| **dashboard-api** | 8086 | Admin analytics and reporting |
+| Service | Description |
+|---------|-------------|
+| **api-gateway** | Auth, rate limiting, routes requests to internal services |
+| **order-service** | Order lifecycle and state machine |
+| **inventory-service** | Stock management and reservations |
+| **payment-service** | Payment processing, refunds, ledger |
+| **notification-service** | Email and SMS dispatch |
+| **shipping-service** | Shipments, tracking, carrier webhooks |
+| **worker** | SQS consumer, orchestrates cross-service events |
+| **scheduler** | Cron jobs (expired reservations, abandoned orders, retries) |
+| **dashboard-api** | Admin dashboard UI, analytics and reporting |
 
 Read the source code. Environment variables, endpoints, and data models are in the code.
 
@@ -52,8 +52,8 @@ Write the Dockerfiles. Write the Terraform. Write the CI/CD pipeline. Deploy all
 - [ ] Dockerfiles (one per service)
 - [ ] Terraform for all infrastructure
 - [ ] GitHub Actions CI/CD pipeline (app deploys and infra changes separated)
-- [ ] Observability (logging, metrics, alarms, dashboards)
 - [ ] Working deployment - all services healthy, end-to-end flow functional
+- [ ] Dashboard UI accessible and connected to all services
 - [ ] README covering the sections below
 
 ---
@@ -71,8 +71,6 @@ This is not optional. Your README is part of the submission.
 **Scaling strategy** - which services scale and on what metric? What stays fixed? What breaks first under load?
 
 **Database migrations** - seven services share one database. How do schema changes get deployed safely? What about rollback?
-
-**Observability** - how you monitor nine services. How you find problems. How you know something is broken before users tell you.
 
 ---
 
@@ -99,11 +97,34 @@ docker compose up --build
 
 ---
 
+## Advanced: Observability
+
+This section is not required for submission but will set your project apart.
+
+It's 2am. Orders are failing. You're on call. You need to answer four questions fast:
+1. Which of the nine services is the problem?
+2. When did it start?
+3. What changed?
+4. Who's affected?
+
+If your setup can't answer those in under 10 minutes without SSH-ing into anything, it's not production-ready.
+
+What that looks like in practice:
+- A single place to see health of all nine services. Not nine separate places.
+- Alarms that mean something. Not "CPU is high" but "order creation rate dropped to zero" or "payment failure rate above 10%."
+- Logs you can search across services. "Show me every log line related to order #4271" - across all nine.
+- The ability to answer "what's the slowest step in the order flow right now?"
+
+Think about how you'd actually build this. Sidecar per task vs shared log gateway - what are the trade-offs? What does 9 services logging to CloudWatch cost per month? Is there a cheaper way? What happens when your logging pipeline itself goes down?
+
+Bonus: a single order touches five services. Distributed tracing lets you follow a request across all of them. Hard to set up. Invaluable when debugging.
+
+---
+
 ## Grading
 
 - All nine services running and healthy
-- End-to-end flow works (create order -> reserve inventory -> process payment -> ship -> deliver)
-- Logs queryable, alarms firing on failures
+- End-to-end flow works through the UI (create order -> reserve inventory -> process payment -> ship -> deliver)
 - Pipeline deploys only what changed
 - Secrets not hardcoded anywhere
 - No NAT gateways, no long-lived credentials

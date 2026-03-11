@@ -2,7 +2,9 @@ package main
 
 import (
 	"database/sql"
+	"embed"
 	"encoding/json"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -10,6 +12,9 @@ import (
 
 	_ "github.com/lib/pq"
 )
+
+//go:embed static
+var staticFiles embed.FS
 
 var db *sql.DB
 
@@ -32,11 +37,16 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", handleHealth)
-	mux.HandleFunc("/summary", handleSummary)
-	mux.HandleFunc("/orders/stats", handleOrderStats)
-	mux.HandleFunc("/revenue", handleRevenue)
-	mux.HandleFunc("/inventory/alerts", handleInventoryAlerts)
-	mux.HandleFunc("/shipping/overview", handleShippingOverview)
+	mux.HandleFunc("/dashboard/healthz", handleHealth)
+	mux.HandleFunc("/dashboard/summary", handleSummary)
+	mux.HandleFunc("/dashboard/orders/stats", handleOrderStats)
+	mux.HandleFunc("/dashboard/revenue", handleRevenue)
+	mux.HandleFunc("/dashboard/inventory/alerts", handleInventoryAlerts)
+	mux.HandleFunc("/dashboard/shipping/overview", handleShippingOverview)
+
+	// Serve frontend UI
+	staticFS, _ := fs.Sub(staticFiles, "static")
+	mux.Handle("/", http.FileServer(http.FS(staticFS)))
 
 	port := getEnv("PORT", "8086")
 	log.Printf("Dashboard API listening on :%s", port)
